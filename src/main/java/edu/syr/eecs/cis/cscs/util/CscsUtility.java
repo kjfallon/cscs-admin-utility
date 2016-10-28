@@ -59,7 +59,7 @@ public class CscsUtility {
         String value = commandLineArguments.getOptionValue("value");
         if (StringUtils.isNotEmpty(key)) {
             String writeResult = writeKey(client, key, value);
-            System.out.println("The key " + key + " was set to " + value);
+            System.out.println("Result: The key " + key + " was set to " + value);
         }
         else {
             System.out.println("Key must not be empty");
@@ -76,7 +76,7 @@ public class CscsUtility {
         String key = commandLineArguments.getOptionValue("key");
         if (StringUtils.isNotEmpty(key)) {
             String readResult = readKey(client, key);
-            System.out.println("Key " + key + " has a value of " + readResult);
+            System.out.println("Result: Key " + key + " has a value of " + readResult);
         }
         else {
             System.out.println("Key must not be empty");
