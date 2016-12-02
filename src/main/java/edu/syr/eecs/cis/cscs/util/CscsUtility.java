@@ -10,8 +10,10 @@ import io.atomix.copycat.client.ServerSelectionStrategies;
 import org.apache.commons.cli.*;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 public class CscsUtility {
@@ -54,12 +56,23 @@ public class CscsUtility {
     private static void addKey(CommandLine commandLineArguments) {
 
         CopycatClient client = createClient(commandLineArguments.getOptionValue("host"));
+        String pathToPrivateKeyFile = "/opt/cscs-admin-utility/demo_private_key_for_signing_data.der";
 
         String key = commandLineArguments.getOptionValue("key");
         String value = commandLineArguments.getOptionValue("value");
+        String valueInBase64 = Base64.getEncoder().encodeToString(value.getBytes());
+        String signatureInBase64 = "";
+        try {
+            signatureInBase64 = Crypto.sign(value, Crypto.getPrivateKey(pathToPrivateKeyFile));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         if (StringUtils.isNotEmpty(key)) {
-            String writeResult = writeKey(client, key, value);
+            String dataWithSignature = valueInBase64 + "," + signatureInBase64;
+            String writeResult = writeKey(client, key, dataWithSignature);
             System.out.println("Result: The key " + key + " was set to " + value);
+            System.out.println("Raw key value tuple with both data and signature base 64 encoded is:");
+            System.out.println(dataWithSignature);
         }
         else {
             System.out.println("Key must not be empty");
@@ -72,11 +85,37 @@ public class CscsUtility {
     private static void queryKey(CommandLine commandLineArguments) {
 
         CopycatClient client = createClient(commandLineArguments.getOptionValue("host"));
+        String pathToPublicKeyFile = "/opt/cscs-admin-utility/demo_public_key_for_verifying_data.der";
 
         String key = commandLineArguments.getOptionValue("key");
         if (StringUtils.isNotEmpty(key)) {
-            String readResult = readKey(client, key);
-            System.out.println("Result: Key " + key + " has a value of " + readResult);
+            String dataWithSignature = readKey(client, key);
+            String valueInBase64 = "";
+            String signatureInBase64 = "";
+            List<String> keyDataArray = Arrays.asList(dataWithSignature.split(","));
+            if (keyDataArray.size() == 2) {
+                valueInBase64 = keyDataArray.get(0);
+                signatureInBase64 = keyDataArray.get(1);
+            }
+            else {
+                System.out.println("The value of the key does not look like a comma separated tuple with two values");
+                System.exit(1);
+            }
+            byte[] valueInBytes = Base64.getDecoder().decode(valueInBase64);
+            String value = "";
+            try {
+                value = new String(valueInBytes, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            boolean signatureIsValue = false;
+            try {
+                signatureIsValue = Crypto.verify(value, signatureInBase64, Crypto.getPublicKey(pathToPublicKeyFile));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            System.out.println("Result: Key " + key + " has a value of " + value);
+            System.out.println("Result: Signature validation is: " + signatureIsValue);
         }
         else {
             System.out.println("Key must not be empty");
