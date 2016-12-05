@@ -108,14 +108,14 @@ public class CscsUtility {
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-            boolean signatureIsValue = false;
+            boolean signatureIsValid= false;
             try {
-                signatureIsValue = Crypto.verify(value, signatureInBase64, Crypto.getPublicKey(pathToPublicKeyFile));
+                signatureIsValid = Crypto.verify(value, signatureInBase64, Crypto.getPublicKey(pathToPublicKeyFile));
             } catch (Exception e) {
                 e.printStackTrace();
             }
             System.out.println("Result: Key " + key + " has a value of " + value);
-            System.out.println("Result: Signature validation is: " + signatureIsValue);
+            System.out.println("Result: Signature validation is: " + signatureIsValid);
         }
         else {
             System.out.println("Key must not be empty");
